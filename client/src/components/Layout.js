@@ -19,6 +19,7 @@ const navItems = [
   { path: '/weather', label: 'Weather Alerts', icon: '🌦️', section: 'operations' },
   { path: '/compliance', label: 'Compliance', icon: '📋', section: 'reports' },
   { path: '/communications', label: 'Communications', icon: '📡', section: 'reports' },
+  { path: '/ai-tools', label: 'AI Tools', icon: '🧠', section: 'reports' },
 ];
 
 const sections = {
@@ -30,7 +31,7 @@ const sections = {
   reports: 'Reports',
 };
 
-export default function Layout({ children }) {
+export default function Layout({ children, alertCount = 0 }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -48,6 +49,11 @@ export default function Layout({ children }) {
         <div className="sidebar-logo">
           <h2>SafeTransit AI</h2>
           <p>Safety Monitoring Platform</p>
+          {alertCount > 0 && (
+            <div style={{ marginTop: 6, background: '#dc2626', borderRadius: 12, padding: '2px 8px', fontSize: 11, color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+              {alertCount} alert{alertCount > 1 ? 's' : ''}
+            </div>
+          )}
         </div>
         <nav className="sidebar-nav">
           {navItems.map((item) => {

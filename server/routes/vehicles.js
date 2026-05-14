@@ -4,10 +4,21 @@ const pool = require('../db');
 
 router.get('/', async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
+    if (req.query.page) {
+      const result = await pool.query('SELECT * FROM vehicles ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]);
+      const count = await pool.query('SELECT COUNT(*) FROM vehicles');
+      return res.json({ data: result.rows, total: parseInt(count.rows[0].count), page, limit });
+    }
     const result = await pool.query('SELECT * FROM vehicles ORDER BY id DESC');
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// POST requires plate_number
+
 
 router.get('/:id', async (req, res) => {
   try {
