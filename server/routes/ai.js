@@ -6,7 +6,7 @@ const { aiRateLimiter } = require('../middleware/rateLimiter');
 const { broadcast } = require('../lib/broadcast');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 
-const MODEL = 'anthropic/claude-3-5-sonnet-20241022';
+const MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-haiku-4.5';
 
 function requireOpenRouterKey(req, res, next) {
   const key = process.env.OPENROUTER_API_KEY;

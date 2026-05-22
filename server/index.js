@@ -58,6 +58,7 @@ app.use('/api/speed', authMiddleware, require('./routes/speed'));
 app.use('/api/communications', authMiddleware, require('./routes/communications'));
 app.use('/api/ai', authMiddleware, require('./routes/ai'));
 app.use('/api/dashboard', authMiddleware, require('./routes/dashboard'));
+app.use('/api/driver-coaching-escalation', authMiddleware, require('./routes/driverCoachingEscalation'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

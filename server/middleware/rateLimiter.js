@@ -6,7 +6,6 @@ const aiRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many AI requests. Please wait before trying again.' },
-  skip: false,
 });
 
 module.exports = { aiRateLimiter };

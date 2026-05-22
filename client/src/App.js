@@ -9,7 +9,13 @@ import TrackingPage from './pages/TrackingPage';
 import FatiguePage from './pages/FatiguePage';
 import EmergenciesPage from './pages/EmergenciesPage';
 import AIToolsPage from './pages/AIToolsPage';
+import DriverCoachingEscalationPage from './pages/DriverCoachingEscalationPage';
 import Layout from './components/Layout';
+
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
+
+import TimelineView from './pages/TimelineView';
 
 // Toast container
 function ToastContainer({ toasts, dismiss }) {
@@ -123,6 +129,10 @@ function AppRoutes() {
     <>
       <ToastContainer toasts={toasts} dismiss={dismissToast} />
       <Routes>
+        <Route path="/insights/timeline" element={<ProtectedRoute><TimelineView /></ProtectedRoute>} />
+        <Route path="/codex/custom-viz" element={<ProtectedRoute><CodexCustomVizFeature /></ProtectedRoute>} />
+        <Route path="/codex/operations" element={<ProtectedRoute><CodexOperationsFeature /></ProtectedRoute>} />
+
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute>{layoutWithAlerts(<Dashboard />)}</ProtectedRoute>} />
         <Route path="/drivers" element={<ProtectedRoute>{layoutWithAlerts(<DriversPage />)}</ProtectedRoute>} />
@@ -141,6 +151,7 @@ function AppRoutes() {
         <Route path="/speed" element={<ProtectedRoute>{layoutWithAlerts(<FeaturePage feature="speed" title="Speed Monitoring" />)}</ProtectedRoute>} />
         <Route path="/communications" element={<ProtectedRoute>{layoutWithAlerts(<FeaturePage feature="communications" title="Communication Hub" />)}</ProtectedRoute>} />
         <Route path="/ai-tools" element={<ProtectedRoute>{layoutWithAlerts(<AIToolsPage />)}</ProtectedRoute>} />
+        <Route path="/driver-coaching-escalation" element={<ProtectedRoute>{layoutWithAlerts(<DriverCoachingEscalationPage />)}</ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>
