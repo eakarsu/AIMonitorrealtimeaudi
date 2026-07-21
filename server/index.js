@@ -3,10 +3,12 @@ const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const crypto = require('crypto');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const pool = require('./db');
 const { initWebSocket } = require('./lib/broadcast');
+const { requireSecret } = require('./config/security');
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 4000;
@@ -19,26 +21,20 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Ensure ai_analyses table exists
-pool.query(`
-  CREATE TABLE IF NOT EXISTS ai_analyses (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER,
-    analysis_type VARCHAR(60),
-    input_data JSONB,
-    result JSONB,
-    created_at TIMESTAMP DEFAULT NOW()
-  )
-`).catch(err => console.error('ai_analyses table error:', err));
-
 // Auth middleware
 const authMiddleware = require('./middleware/auth');
 
 // Routes - auth EXCLUDED from public routes
 app.use('/api/auth', require('./routes/auth'));
 
-// IoT endpoint - no auth
-app.use('/api/tracking/ingest', require('./routes/trackingIngest'));
+// Device ingest is separate from user JWT auth but still fail-closed.
+function authenticateTelemetryDevice(req,res,next){
+  let expected;try{expected=requireSecret('TELEMETRY_INGEST_SECRET');}catch(e){return res.status(503).json({error:'Telemetry ingest is not configured'});}
+  const supplied=String(req.get('x-telemetry-key')||'');const a=Buffer.from(supplied),b=Buffer.from(expected);
+  if(a.length!==b.length||!crypto.timingSafeEqual(a,b))return res.status(401).json({error:'Invalid telemetry credential'});
+  next();
+}
+app.use('/api/tracking/ingest', authenticateTelemetryDevice, require('./routes/trackingIngest'));
 
 // All domain routes - auth required
 app.use('/api/drivers', authMiddleware, require('./routes/drivers'));
@@ -59,6 +55,12 @@ app.use('/api/communications', authMiddleware, require('./routes/communications'
 app.use('/api/ai', authMiddleware, require('./routes/ai'));
 app.use('/api/dashboard', authMiddleware, require('./routes/dashboard'));
 app.use('/api/driver-coaching-escalation', authMiddleware, require('./routes/driverCoachingEscalation'));
+app.use('/api/transit-safety-workflow', authMiddleware, require('./routes/transitSafetyWorkflow'));
+
+app.use(/^\/api\/(?:gap-|safety-coach-agent|vision-road-hazard|emergency-response-autonomous|insurance-orchestration|passenger-safety-agent)/, (req,res,next) => {
+  if (process.env.ENABLE_EXPERIMENTAL_ROUTES === 'true') return next();
+  return res.status(501).json({error:'Generated/provider-backed surface is quarantined',required:'ENABLE_EXPERIMENTAL_ROUTES=true plus documented provider configuration'});
+});
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

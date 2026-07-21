@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
 require('dotenv').config({ path: '../.env' });
+const { jwtSecret } = require('../config/security');
 
 router.post('/login', async (req, res) => {
   try {
@@ -19,7 +20,7 @@ router.post('/login', async (req, res) => {
     }
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, name: user.name },
-      process.env.JWT_SECRET,
+      jwtSecret(),
       { expiresIn: '24h' }
     );
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.name } });
@@ -32,7 +33,7 @@ router.get('/me', async (req, res) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ error: 'No token' });
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, jwtSecret());
     res.json({ user: decoded });
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });
