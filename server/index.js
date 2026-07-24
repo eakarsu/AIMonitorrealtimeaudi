@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const pool = require('./db');
@@ -12,6 +13,38 @@ const { requireSecret } = require('./config/security');
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 4000;
+
+async function initializeRuntime() {
+  if (process.env.MIGRATE_ON_START !== 'true') return;
+  const email = process.env.PROVISION_ADMIN_EMAIL || process.env.ADMIN_EMAIL;
+  const password = process.env.PROVISION_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
+  if (!email || !password) throw new Error('Runtime admin credentials are required');
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      role VARCHAR(50) DEFAULT 'operator',
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS ai_analyses (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER,
+      analysis_type VARCHAR(100) NOT NULL,
+      input_data JSONB,
+      result JSONB,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+  const passwordHash = await bcrypt.hash(password, 10);
+  await pool.query(
+    `INSERT INTO users (name, email, password_hash, role)
+     VALUES ($1, $2, $3, 'admin')
+     ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role`,
+    [process.env.PROVISION_ADMIN_NAME || 'Runtime Administrator', email, passwordHash]
+  );
+}
 
 // Security middleware
 app.use(helmet());
@@ -76,9 +109,12 @@ app.use((err, req, res, next) => {
 const httpServer = http.createServer(app);
 initWebSocket(httpServer);
 
-httpServer.listen(PORT, () => {
-  console.log(`Transport Safety API running on port ${PORT}`);
-});
+initializeRuntime()
+  .then(() => httpServer.listen(PORT, () => console.log(`Transport Safety API running on port ${PORT}`)))
+  .catch((error) => {
+    console.error('Runtime initialization failed:', error.message);
+    process.exit(1);
+  });
 
 // === BATCH 05 AUTO-MOUNT (custom feature suggestions) ===
 app.use('/api/safety-coach-agent', require('./routes/safety-coach-agent'));

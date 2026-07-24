@@ -34,7 +34,9 @@ router.get('/me', async (req, res) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ error: 'No token' });
     const decoded = jwt.verify(token, jwtSecret());
-    res.json({ user: decoded });
+    const result = await pool.query('SELECT id, name, email, role FROM users WHERE id = $1', [decoded.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ user: result.rows[0] });
   } catch (err) {
     res.status(401).json({ error: 'Invalid token' });
   }

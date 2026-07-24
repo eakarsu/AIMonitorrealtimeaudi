@@ -17,7 +17,8 @@ function requireOpenRouterKey(req, res, next) {
 }
 
 async function callOpenRouter(systemPrompt, context) {
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const baseUrl = String(process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
+  const response = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
